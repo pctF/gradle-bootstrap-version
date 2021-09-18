@@ -1,24 +1,48 @@
 rootProject.name = 'gradle-bootstrap-version'
 
-println("bf : ${rootProject.buildFile.getText()}")
-
-def findVersion() {
-    def writer = new StringWriter()
-    rootProject.buildFile
-            .filterLine {it.startsWith("version")}
-            .writeTo(writer)
-    writer.buffer
-            .toString()
-            .find(~"'.*'")
-            .replaceAll("'", "")
-}
-
 static def isSnapshot(String version) {
     version.contains("SNAPSHOT")
 }
 
-findVersion().with {
-    println "Version is: $it\nisSnapshot:${isSnapshot(it)}"
+def findVersion() {
+    String version = findVersionLineInBuildFile()
+    version.find(~"'.*'")
+            .replaceAll("'", "")
+}
+
+private String findVersionLineInBuildFile() {
+    def writer = new StringWriter()
+    writeVersionFromBuildFile(writer)
+    writer.buffer.toString()
+}
+
+private Writer writeVersionFromBuildFile(StringWriter writer) {
+    rootProject.buildFile
+            .filterLine { it.startsWith("version") }
+            .writeTo(writer)
+}
+
+def modifyVersion(String oldVersion, String newVersion) {
+    rootProject.buildFile
+            .text
+            .replaceAll(oldVersion, newVersion)
+            .with {
+                rootProject.buildFile.write(it)
+            }
+}
+
+def removeSnapshot() {
+    findVersion().with { String oldVersion ->
+        println "Version is: $oldVersion\nisSnapshot:${isSnapshot(oldVersion)}"
+        if(isSnapshot(oldVersion)) {
+            println "removing snapshot"
+            def cleanVersion = oldVersion.substring(0, oldVersion.findIndexOf {it == "-" || it == " "})
+            println "clean version $cleanVersion"
+            modifyVersion(oldVersion, cleanVersion)
+        } else {
+            return null
+        }
+    }
 }
 
 

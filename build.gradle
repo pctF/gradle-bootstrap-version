@@ -2,8 +2,11 @@ plugins {
     id 'java'
 }
 
+
 group 'com.github.pctf'
 version '1.0-SNAPSHOT'
+
+println "build.gradle version is: $version"
 
 repositories {
     mavenCentral()
