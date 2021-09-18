@@ -1,0 +1,25 @@
+rootProject.name = 'gradle-bootstrap-version'
+
+println("bf : ${rootProject.buildFile.getText()}")
+
+def findVersion() {
+    def writer = new StringWriter()
+    rootProject.buildFile
+            .filterLine {it.startsWith("version")}
+            .writeTo(writer)
+    writer.buffer
+            .toString()
+            .find(~"'.*'")
+            .replaceAll("'", "")
+}
+
+static def isSnapshot(String version) {
+    version.contains("SNAPSHOT")
+}
+
+findVersion().with {
+    println "Version is: $it\nisSnapshot:${isSnapshot(it)}"
+}
+
+
+
