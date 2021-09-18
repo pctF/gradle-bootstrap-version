@@ -15,3 +15,66 @@ repositories {
 dependencies {
 
 }
+
+tasks.register("prepareRelease", RemoveSnapshotTask)
+
+abstract class RemoveSnapshotTask extends DefaultTask {
+
+    @TaskAction
+    def removeSnapshotAndSetNewVersion() {
+        println "Current version=${project.rootProject.version}"
+        project.rootProject.version = removeSnapshot()
+        println "New version=${project.rootProject.version}"
+    }
+
+    def removeSnapshot() {
+        findVersion().with { String oldVersion ->
+            if(isSnapshot(oldVersion)) {
+                println "removing snapshot"
+                def cleanVersion = oldVersion.substring(0, oldVersion.findIndexOf {it == "-" || it == " "})
+                modifyVersion(oldVersion, cleanVersion)
+                return cleanVersion
+            } else {
+                println "version is not snapshot"
+                return oldVersion
+            }
+        }
+    }
+
+    def findVersion() {
+        String version = findVersionLineInBuildFile()
+        version.find(~"'.*'")
+                .replaceAll("'", "")
+    }
+
+    private String findVersionLineInBuildFile() {
+        def writer = new StringWriter()
+        writeVersionFromBuildFile(writer)
+        writer.buffer.toString()
+    }
+
+    private Writer writeVersionFromBuildFile(StringWriter writer) {
+        project.rootProject
+                .buildFile
+                .filterLine { it.startsWith("version") }
+                .writeTo(writer)
+    }
+
+    static def isSnapshot(String version) {
+        version.contains("SNAPSHOT")
+    }
+
+
+    def modifyVersion(String oldVersion, String newVersion) {
+        project.rootProject
+                .buildFile
+                .text
+                .replaceAll(oldVersion, newVersion)
+                .with {
+                    project.rootProject
+                            .buildFile
+                            .write(it)
+                }
+    }
+
+}
