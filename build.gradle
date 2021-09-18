@@ -15,7 +15,9 @@ dependencies {
 
 }
 
-tasks.register("prepareRelease", RemoveSnapshotTask)
+// TODO 1. prepare new branch for changes (git plugin?)
+// TODO 2. prepare next development iteration. eg - new branch and minor version change 1.0.0-SNAPSHOT -> 1.0.0 -> 1.0.1-SNAPSHOT
+tasks.register("removeSnapshot", RemoveSnapshotTask)
 
 abstract class RemoveSnapshotTask extends DefaultTask {
     boolean versionChanged = false
@@ -46,15 +48,20 @@ abstract class RemoveSnapshotTask extends DefaultTask {
 
     private String removeSnapshot(String oldVersion) {
         def cleanVersion = buildCleanVersion(oldVersion)
-        modifyVersion oldVersion, cleanVersion
+        modifyVersionInBuildGradle oldVersion, cleanVersion
         cleanVersion
     }
 
     private static String buildCleanVersion(String version) {
-        version.substring(0, version.findIndexOf { it == "-" || it == " " })
+        version.substring(0, versionPrefixLength(version))
     }
 
-    def modifyVersion(String oldVersion, String newVersion) {
+    // TODO: complex logic for finding versionPrefix
+    private static int versionPrefixLength(String version) {
+        version.findIndexOf { it == "-" || it == " " }
+    }
+
+    def modifyVersionInBuildGradle(String oldVersion, String newVersion) {
         project.rootProject
                 .buildFile
                 .text
